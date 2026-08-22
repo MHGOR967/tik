@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
 
@@ -9,92 +10,57 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// دالة تحويل رمز الدولة إلى إيموجي علم الدولة
+function getFlagEmoji(countryCode) {
+    if (!countryCode || countryCode.length !== 2) return '🌐';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+}
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// مسار API لجلب بيانات IP السيرفر الحقيقية لحظياً
+app.get('/api/server-info', async (req, res) => {
+    try {
+        // إضافة timestamp لتفادي الكاش وضمان جلب الـ IP الفعلي في نفس اللحظة
+        const response = await axios.get(`http://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query&_t=${Date.now()}`, {
+            timeout: 7000
+        });
+
+        if (response.data && response.data.status === 'success') {
+            const data = response.data;
+            return res.json({
+                success: true,
+                ip: data.query,
+                country: data.country,
+                countryCode: data.countryCode,
+                flag: getFlagEmoji(data.countryCode),
+                regionName: data.regionName,
+                city: data.city,
+                zip: data.zip || '---',
+                lat: data.lat,
+                lon: data.lon,
+                timezone: data.timezone,
+                isp: data.isp,
+                org: data.org || data.as || '---',
+                checkedAt: new Date().toLocaleTimeString('ar-SA')
+            });
+        } else {
+            return res.status(500).json({ success: false, message: 'فشل في استرداد بيانات IP السيرفر.' });
+        }
+    } catch (error) {
         return res.status(500).json({
             success: false,
-            message: 'حدث ضغط على السيرفر أو أن الحساب غير متاح حالياً. حاول مجدداً.'
+            message: 'حدث خطأ أثناء الاتصال بخدمة تحديد الموقع الجغرافي.',
+            error: error.message
         });
     }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-});
-    } catch (err) {
-        console.warn('TikWM Provider Failed, falling back to TikTok Web Direct...', err.message);
-    }
-
-    // 2. المحاولة الاحتياطية الثانية: القراءة المباشرة من TikTok Web
-    try {
-        const directUrl = `https://www.tiktok.com/@${username}`;
-        const webRes = await axios.get(directUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8'
-            },
-            timeout: 8000
-        });
-
-        const $ = cheerio.load(webRes.data);
-        const rawJson = $('#__UNIVERSAL_DATA_FOR_REHYDRATION__').html() || $('#SIGI_STATE').html();
-
-        if (rawJson) {
-            const parsed = JSON.parse(rawJson);
-            const userScope = parsed?.defaultScope?.['user-detail']?.userInfo ||
-                              parsed?.ItemModule?.[username] ||
-                              parsed?.UserModule?.users?.[username];
-
-            if (userScope && userScope.user) {
-                const u = userScope.user;
-                const st = userScope.stats || {};
-                const regCode = (u.region || 'SA').toUpperCase();
-                const country = COUNTRY_MAP[regCode] || { name_ar: regCode, name_en: regCode, flag: '🌐' };
-
-                return res.json({
-                    success: true,
-                    account: {
-                        userId: u.id || u.uid || '---',
-                        uniqueId: u.uniqueId || username,
-                        nickname: u.nickname || username,
-                        avatar: u.avatarLarger || u.avatarMedium || '',
-                        signature: u.signature || '',
-                        verified: Boolean(u.verified),
-                        region: {
-                            code: regCode,
-                            nameAr: country.name_ar,
-                            nameEn: country.name_en,
-                            flag: country.flag
-                        },
-                        language: (u.language || 'AR').toUpperCase(),
-                        joinedAt: u.createTime ? new Date(u.createTime * 1000).toISOString() : parseUserIdCreationDate(u.id),
-                        nicknameUpdatedAt: null,
-                        usernameUpdatedAt: null
-                    },
-                    stats: {
-                        followers: st.followerCount || 0,
-                        following: st.followingCount || 0,
-                        hearts: st.heartCount || st.heart || 0,
-                        videos: st.videoCount || 0
-                    }
-                });
-            }
-        }
-    } catch (directErr) {
-        console.error('Direct fallback failed:', directErr.message);
-    }
-
-    // إذا فشلت الطريقتان
-    return res.status(404).json({
-        success: false,
-        message: 'لم نتمكن من جلب بيانات الحساب في الوقت الحالي. تأكد من صحة اليوزر وحاول مجدداً.'
-    });
+// الصفحة الرئيسية
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
