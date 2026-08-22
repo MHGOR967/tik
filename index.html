@@ -3,105 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tikip.us - فاحص بيانات ودولة حساب تيك توك</title>
+    <title>فاحص IP ومعلومات السيرفر 🌐</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- خط تجوال العربي -->
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+    <div class="max-w-2xl mx-auto w-full">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-3 text-blue-400">
+                <i class="fa-solid fa-server text-2xl"></i>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight">معلومات وموقع IP السيرفر</h1>
+            <p class="text-slate-400 text-xs md:text-sm mt-1">كشف دولة السيرفر، وموقعه الجغرافي، ومراقبة تغير الـ IP لحظياً</p>
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 mb-6 gap-3">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+                <span class="text-xs text-slate-300">مرات الفحص والتحديث: <strong id="refreshCount" class="text-blue-400 mono">0</strong></span>
+            </div>
+            <button onclick="fetchServerInfo()" id="refreshBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 active:scale-95 transition text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 space-x-reverse shadow-lg shadow-blue-600/30">
+                <i id="btnIcon" class="fa-solid fa-rotate"></i>
+                <span>تحديث وفحص الآن</span>
+            </button>
+        </div>
+
+        <!-- IP Display Hero Card -->
+        <div class="bg-gradient-to-br from-slate-800 to-slate-850 border border-slate-700 rounded-3xl p-6 mb-6 text-center relative overflow-hidden shadow-xl">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">CURRENT SERVER IP</span>
+            <div id="ipAddress" class="mono text-2xl md:text-4xl font-black text-blue-400 tracking-wider my-2">
+                جاري الفحص...
+            </div>
+            <!-- Status Badge: Fixed vs Dynamic -->
+            <div id="ipStatusBadge" class="inline-flex items-center space-x-1.5 space-x-reverse text-xs px-3 py-1 rounded-full font-bold bg-slate-700 text-slate-300">
+                <i class="fa-solid fa-clock"></i>
+                <span>في انتظار المقارنة بعد التحديث...</span>
+            </div>
+        </div>
+
+        <!-- Error Card -->
+        <div id="errorCard" class="hidden bg-rose-950/50 border border-rose-800 text-rose-300 p-4 rounded-2xl mb-6 text-xs flex items-center space-x-2 space-x-reverse">
+            <i class="fa-solid fa-triangle-exclamation text-base"></i>
+            <span id="errorMessage">حدث خطأ</span>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- Country & Flag -->
+            <div class="bg-slate-800/60 border border-slate-750 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-slate-400 block mb-1">الدولة</span>
+                    <div class="font-bold text-sm text-slate-200" id="countryName">---</div>
+                </div>
+                <div class="text-4xl" id="countryFlag">🌐</div>
+            </div>
+
+            <!-- Region & City -->
+            <div class="bg-slate-800/60 border border-slate-750 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-slate-400 block mb-1">المنطقة والمدينة</span>
+                    <div class="font-bold text-sm text-slate-200" id="cityRegion">---</div>
+                </div>
+                <i class="fa-solid fa-city text-2xl text-slate-500"></i>
+            </div>
+
+            <!-- ISP / Host -->
+            <div class="bg-slate-800/60 border border-slate-750 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-slate-400 block mb-1">مزود الخدمة (ISP / Org)</span>
+                    <div class="font-bold text-slate-200 truncate max-w-[200px]" id="ispOrg">---</div>
+                </div>
+                <i class="fa-solid fa-network-wired text-2xl text-slate-500"></i>
+            </div>
+
+            <!-- Timezone -->
+            <div class="bg-slate-800/60 border border-slate-750 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-slate-400 block mb-1">المنطقة الزمنية</span>
+                    <div class="font-bold text-slate-200 mono" id="timezone">---</div>
+                </div>
+                <i class="fa-solid fa-clock-rotate-left text-2xl text-slate-500"></i>
+            </div>
+
+            <!-- Coordinates -->
+            <div class="bg-slate-800/60 border border-slate-750 p-4 rounded-2xl md:col-span-2 flex items-center justify-between">
+                <div>
+                    <span class="text-slate-400 block mb-1">الإحداثيات الجغرافية (Lat / Lon)</span>
+                    <div class="font-bold text-slate-200 mono" id="coordinates">---</div>
+                </div>
+                <i class="fa-solid fa-location-dot text-2xl text-slate-500"></i>
+            </div>
+        </div>
+
+        <div class="text-center text-[11px] text-slate-500 mt-6">
+            آخر فحص تم في: <span id="lastCheckedTime" class="mono text-slate-400">---</span>
+        </div>
+    </div>
+
+    <!-- Script -->
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Tajawal', 'sans-serif'] },
-                    colors: {
-                        tikBlue: '#0066ff',
-                        tikPink: '#ff0050'
+        let previousIp = null;
+        let count = 0;
+
+        async function fetchServerInfo() {
+            const btnIcon = document.getElementById('btnIcon');
+            const errorCard = document.getElementById('errorCard');
+            
+            btnIcon.classList.add('fa-spin');
+            errorCard.classList.add('hidden');
+
+            try {
+                const response = await fetch(`/api/server-info?_t=${Date.now()}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    count++;
+                    document.getElementById('refreshCount').innerText = count;
+
+                    const currentIp = data.ip;
+                    document.getElementById('ipAddress').innerText = currentIp;
+
+                    // مقارنة وتحديد هل هو ثابت أم تغير
+                    const badge = document.getElementById('ipStatusBadge');
+                    if (previousIp === null) {
+                        badge.className = 'inline-flex items-center space-x-1.5 space-x-reverse text-xs px-3 py-1 rounded-full font-bold bg-blue-900/60 text-blue-300 border border-blue-700';
+                        badge.innerHTML = '<i class="fa-solid fa-check"></i><span>تم رصد الـ IP الأولي</span>';
+                    } else if (previousIp === currentIp) {
+                        badge.className = 'inline-flex items-center space-x-1.5 space-x-reverse text-xs px-3 py-1 rounded-full font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-700';
+                        badge.innerHTML = '<i class="fa-solid fa-shield-halved"></i><span>الـ IP ثابت (لم يتغير)</span>';
+                    } else {
+                        badge.className = 'inline-flex items-center space-x-1.5 space-x-reverse text-xs px-3 py-1 rounded-full font-bold bg-amber-900/60 text-amber-300 border border-amber-700';
+                        badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>تغير الـ IP! (السابق: ${previousIp})</span>`;
                     }
+                    previousIp = currentIp;
+
+                    // تحديث البيانات التفصيلية
+                    document.getElementById('countryName').innerText = `${data.country} (${data.countryCode})`;
+                    document.getElementById('countryFlag').innerText = data.flag;
+                    document.getElementById('cityRegion').innerText = `${data.city} - ${data.regionName}`;
+                    document.getElementById('ispOrg').innerText = `${data.isp} (${data.org})`;
+                    document.getElementById('timezone').innerText = data.timezone;
+                    document.getElementById('coordinates').innerText = `${data.lat}, ${data.lon}`;
+                    document.getElementById('lastCheckedTime').innerText = data.checkedAt;
+                } else {
+                    document.getElementById('errorMessage').innerText = data.message || 'تعذر جلب البيانات.';
+                    errorCard.classList.remove('hidden');
                 }
+            } catch (err) {
+                document.getElementById('errorMessage').innerText = 'تعذر الاتصال بالسيرفر.';
+                errorCard.classList.remove('hidden');
+            } finally {
+                btnIcon.classList.remove('fa-spin');
             }
         }
+
+        // جلب البيانات فور فتح الصفحة
+        window.addEventListener('DOMContentLoaded', fetchServerInfo);
     </script>
-    <style> body { font-family: 'Tajawal', sans-serif; } </style>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
-
-    <!-- شريط الموقع -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2 space-x-reverse">
-                <span class="text-2xl font-black text-slate-900 tracking-tight">Tikip<span class="text-tikBlue">.us</span></span>
-                <span class="text-[10px] bg-blue-100 text-tikBlue px-2 py-0.5 rounded-full font-bold">PRO LIVE</span>
-            </div>
-            <span class="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md">
-                <i class="fa-solid fa-circle-check"></i> متصل
-            </span>
-        </div>
-    </header>
-
-    <!-- المحتوى الرئيسي -->
-    <main class="max-w-xl mx-auto px-4 py-8 w-full flex-grow">
-
-        <!-- صندوق البحث -->
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6">
-            <h1 class="text-xl font-bold text-slate-900 mb-1 text-center">استعلام دولة وبيانات حساب تيك توك</h1>
-            <p class="text-slate-500 text-xs text-center mb-5">أدخل اليوزر للتعرف على دولة التسجيل والـ ID والمتابعين مباشرة</p>
-            
-            <form id="searchForm" onsubmit="inspectTikTok(event)" class="space-y-3">
-                <div class="relative">
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 font-bold">@</span>
-                    <input type="text" id="usernameInput" required placeholder="مثال: khaby.lame" 
-                           class="w-full pr-10 pl-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-tikBlue outline-none text-left font-bold text-sm">
-                </div>
-                <button type="submit" 
-                        class="w-full bg-tikBlue hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl transition flex items-center justify-center space-x-2 space-x-reverse shadow-md shadow-blue-500/20">
-                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
-                    <span>فحص الحساب الآن</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- تنبيه الخطأ -->
-        <div id="errorAlert" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl mb-6 text-xs font-bold flex items-center space-x-2 space-x-reverse">
-            <i class="fa-solid fa-circle-exclamation text-base"></i>
-            <span id="errorText">تعذر العثور على الحساب.</span>
-        </div>
-
-        <!-- التحميل -->
-        <div id="loadingBox" class="hidden text-center py-10">
-            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-tikBlue border-t-transparent"></div>
-            <p class="mt-3 text-slate-600 font-bold text-xs">جاري فحص الحساب وتحديد الدولة...</p>
-        </div>
-
-        <!-- بطاقة النتائج -->
-        <div id="resultsBox" class="hidden space-y-5">
-
-            <!-- البروفايل -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex items-center space-x-4 space-x-reverse">
-                <img id="userAvatar" src="" class="w-16 h-16 rounded-full object-cover border-2 border-tikBlue p-0.5">
-                <div class="overflow-hidden flex-1">
-                    <div class="flex items-center space-x-1 space-x-reverse">
-                        <h2 id="nickname" class="text-lg font-bold text-slate-900 truncate">---</h2>
-                        <span id="verifiedBadge" class="hidden text-tikBlue">
-                            <i class="fa-solid fa-circle-check"></i>
-                        </span>
-                    </div>
-                    <p id="username" class="text-xs text-slate-400">@---</p>
-                    <p id="bioText" class="text-xs text-slate-600 mt-1 line-clamp-2 italic">---</p>
-                </div>
-            </div>
-
-            <!-- تفاصيل الحساب والدولة -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
-                <h3 class="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-3 border-b pb-2">ACCOUNT DETAILS</h3>
-                
-                <div class="space-y-3 text-xs">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-slate-400 uppercase text-[10px]">USER ID</span>
-                        <span id="userId" class="font-mono text-slate-800 bg-slate-100 px-2 py-0.5 rounded font-bold select-all">---</span>
-                    </div>
-
+</body>
+</html>
                     <div class="flex justify-between items-center">
                         <span class="font-bold text-slate-400 uppercase text-[10px]">REGISTERED REGION</span>
                         <div class="flex items-center space-x-1.5 space-x-reverse font-bold text-slate-800">
