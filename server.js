@@ -1,6 +1,5 @@
 const express = require('express');
 const axios = require('axios');
-const cheerio = require('cheerio');
 const cors = require('cors');
 const path = require('path');
 
@@ -11,14 +10,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// خريطة الدول
+// خريطة الدول الشاملة
 const COUNTRY_MAP = {
     'SA': { name_ar: 'المملكة العربية السعودية', name_en: 'Saudi Arabia', flag: '🇸🇦' },
     'AE': { name_ar: 'الإمارات العربية المتحدة', name_en: 'United Arab Emirates', flag: '🇦🇪' },
     'KW': { name_ar: 'الكويت', name_en: 'Kuwait', flag: '🇰🇼' },
     'QA': { name_ar: 'قطر', name_en: 'Qatar', flag: '🇶🇦' },
     'BH': { name_ar: 'البحرين', name_en: 'Bahrain', flag: '🇧🇭' },
-    'OM': { name_ar: 'عُمان', name_en: 'Oman', flag: '🇴🇲' },
+    'OM': { name_ar: 'سلطنة عُمان', name_en: 'Oman', flag: '🇴🇲' },
     'EG': { name_ar: 'مصر', name_en: 'Egypt', flag: '🇪🇬' },
     'IQ': { name_ar: 'العراق', name_en: 'Iraq', flag: '🇮🇶' },
     'JO': { name_ar: 'الأردن', name_en: 'Jordan', flag: '🇯🇴' },
@@ -29,79 +28,91 @@ const COUNTRY_MAP = {
     'US': { name_ar: 'الولايات المتحدة', name_en: 'United States', flag: '🇺🇸' },
     'CA': { name_ar: 'كندا', name_en: 'Canada', flag: '🇨🇦' },
     'GB': { name_ar: 'المملكة المتحدة', name_en: 'United Kingdom', flag: '🇬🇧' },
-    'TR': { name_ar: 'تركيا', name_en: 'Turkey', flag: '🇹🇷' }
+    'TR': { name_ar: 'تركيا', name_en: 'Turkey', flag: '🇹🇷' },
+    'FR': { name_ar: 'فرنسا', name_en: 'France', flag: '🇫🇷' },
+    'DE': { name_ar: 'ألمانيا', name_en: 'Germany', flag: '🇩🇪' }
 };
-
-// فك شفرة تاريخ إنشاء الحساب من الـ User ID
-function parseUserIdCreationDate(userId) {
-    try {
-        if (!userId) return null;
-        const bigIntId = BigInt(userId);
-        const timestamp = Number(bigIntId >> 32n) * 1000;
-        if (timestamp > 1400000000000 && timestamp < Date.now()) {
-            return new Date(timestamp).toISOString();
-        }
-    } catch (e) {}
-    return null;
-}
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// المسار الرئيسي للفحص مع محاولات متعددة
+// مسار الفحص المضمون
 app.get('/api/check', async (req, res) => {
     const rawUsername = req.query.username;
     if (!rawUsername) {
-        return res.status(400).json({ success: false, message: 'يرجى تزويد اسم المستخدم.' });
+        return res.status(400).json({ success: false, message: 'يرجى إدخال اسم المستخدم.' });
     }
 
     const username = rawUsername.replace('@', '').trim().toLowerCase();
 
-    // 1. المحاولة الأولى: عبر TikWM Core
     try {
-        const response = await axios.get(`https://www.tikwm.com/api/user/info?unique_id=${encodeURIComponent(username)}`, {
-            timeout: 7000,
+        // استخدام خدمة API عامة ومستقرة لجلب معلومات الحساب الحقيقية والدولة
+        const apiUrl = `https://www.tikwm.com/api/user/info?unique_id=${encodeURIComponent(username)}`;
+        
+        const response = await axios.get(apiUrl, {
+            timeout: 8000,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Accept': 'application/json, text/plain, */*'
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
             }
         });
 
-        if (response.data && response.data.code === 0 && response.data.data) {
-            const u = response.data.data.user || {};
-            const st = response.data.data.stats || {};
-            const regCode = (u.region || 'SA').toUpperCase();
+        const data = response.data;
+
+        if (data && data.code === 0 && data.data) {
+            const userInfo = data.data.user || {};
+            const statsInfo = data.data.stats || {};
+
+            // استخراج الدولة برمزها الصحيح
+            const regCode = (userInfo.region || userInfo.storeRegion || 'SA').toUpperCase();
             const country = COUNTRY_MAP[regCode] || { name_ar: regCode, name_en: regCode, flag: '🌐' };
 
             return res.json({
                 success: true,
                 account: {
-                    userId: u.id || '---',
-                    uniqueId: u.uniqueId || username,
-                    nickname: u.nickname || username,
-                    avatar: u.avatarLarger || u.avatarMedium || u.avatarThumb || '',
-                    signature: u.signature || '',
-                    verified: Boolean(u.verified),
+                    userId: userInfo.id || 'غير متوفر',
+                    uniqueId: userInfo.uniqueId || username,
+                    nickname: userInfo.nickname || username,
+                    avatar: userInfo.avatarLarger || userInfo.avatarMedium || userInfo.avatarThumb || '',
+                    signature: userInfo.signature || '',
+                    verified: Boolean(userInfo.verified),
                     region: {
                         code: regCode,
                         nameAr: country.name_ar,
                         nameEn: country.name_en,
                         flag: country.flag
                     },
-                    language: (u.language || 'AR').toUpperCase(),
-                    joinedAt: u.createTime ? new Date(u.createTime * 1000).toISOString() : parseUserIdCreationDate(u.id),
-                    nicknameUpdatedAt: u.nickNameModifyTime ? new Date(u.nickNameModifyTime * 1000).toISOString() : null,
-                    usernameUpdatedAt: u.userModifyTime ? new Date(u.userModifyTime * 1000).toISOString() : null
+                    language: (userInfo.language || 'AR').toUpperCase(),
+                    joinedAt: userInfo.createTime ? new Date(userInfo.createTime * 1000).toISOString() : null,
+                    nicknameUpdatedAt: userInfo.nickNameModifyTime ? new Date(userInfo.nickNameModifyTime * 1000).toISOString() : null,
+                    usernameUpdatedAt: userInfo.userModifyTime ? new Date(userInfo.userModifyTime * 1000).toISOString() : null
                 },
                 stats: {
-                    followers: st.followerCount || 0,
-                    following: st.followingCount || 0,
-                    hearts: st.heartCount || st.heart || 0,
-                    videos: st.videoCount || 0
+                    followers: statsInfo.followerCount || 0,
+                    following: statsInfo.followingCount || 0,
+                    hearts: statsInfo.heartCount || statsInfo.heart || 0,
+                    videos: statsInfo.videoCount || 0
                 }
             });
+        } else {
+            return res.status(404).json({
+                success: false,
+                message: 'عذراً، لم نتمكن من العثور على هذا الحساب. تأكد من صحة اليوزر.'
+            });
         }
+
+    } catch (error) {
+        console.error('Fetch Error:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: 'حدث ضغط على السيرفر أو أن الحساب غير متاح حالياً. حاول مجدداً.'
+        });
+    }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+});
     } catch (err) {
         console.warn('TikWM Provider Failed, falling back to TikTok Web Direct...', err.message);
     }
