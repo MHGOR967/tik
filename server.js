@@ -1,24 +1,14 @@
 /**
- * TikTok USA Stealth Session Keeper & Inspector Engine
- * Uses Puppeteer Stealth to bypass TikTok SecGuard, generate X-Bogus signatures,
- * and maintain an active session from USA datacenter IP.
+ * TikTok USA Active Session Keeper - Oxylabs Proxy Pre-Configured
+ * Built for Render / Node.js Deployment
  */
 
 const express = require('express');
+const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
-const axios = require('axios');
-
-// استيراد أدوات المتصفح الخفي
-let puppeteer;
-try {
-    const puppeteerExtra = require('puppeteer-extra');
-    const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-    puppeteerExtra.use(StealthPlugin());
-    puppeteer = puppeteerExtra;
-} catch (e) {
-    console.warn('Puppeteer Stealth plugin not loaded, using native fallback.');
-}
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const { SocksProxyAgent } = require('socks-proxy-agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,19 +17,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// تخزين الـ Session ID والبيانات
+// رابط بروكسي Oxylabs الخاص بك مدمج مسبقاً كخيار افتراضي
+const OXYLABS_PROXY_URL = 'http://user-iwahm_5Kddd-country-US:pX_sp7ZhSs4hlyJ@dc.oxylabs.io:8000';
+
 let CURRENT_SESSION_ID = process.env.TIKTOK_SESSION_ID || '78534469621c1064eae0e17393022dee';
+let CURRENT_PROXY_URL = process.env.VPN_PROXY_URL || OXYLABS_PROXY_URL;
 
 let sessionState = {
     status: 'INITIALIZING', // INITIALIZING | LOGGED_IN | REJECTED | ERROR
-    mode: 'STEALTH_BROWSER',
     lastChecked: null,
     totalPings: 0,
     successfulPings: 0,
     failedPings: 0,
     errorMessage: null,
     account: null,
-    serverIpInfo: null
+    activeProxyIp: null,
+    proxyLocation: null
 };
 
 const activityLogs = [];
@@ -50,29 +43,60 @@ function addLog(type, message) {
     if (activityLogs.length > 35) activityLogs.pop();
 }
 
-// جلب معلومات IP السيرفر الأمريكية
-async function fetchServerIpInfo() {
+/**
+ * تجهيز وكيل الاتصال الموجه عبر بروكسي Oxylabs
+ */
+function getProxyAgent() {
+    if (!CURRENT_PROXY_URL || !CURRENT_PROXY_URL.trim()) {
+        return null;
+    }
+
+    const proxyStr = CURRENT_PROXY_URL.trim();
     try {
-        const res = await axios.get('http://ip-api.com/json/', { timeout: 5000 });
-        if (res.data && res.data.status === 'success') {
-            sessionState.serverIpInfo = {
-                ip: res.data.query,
-                country: res.data.country,
-                countryCode: res.data.countryCode,
-                city: res.data.city,
-                isp: res.data.isp
-            };
-            addLog('info', `عنوان IP السيرفر الحالي: ${res.data.query} (${res.data.country})`);
+        if (proxyStr.startsWith('socks')) {
+            return new SocksProxyAgent(proxyStr);
+        } else {
+            return new HttpsProxyAgent(proxyStr.startsWith('http') ? proxyStr : `http://${proxyStr}`);
         }
     } catch (e) {
-        console.error('IP info failed:', e.message);
+        addLog('error', `⚠️ خطأ في وكيل الاتصال: ${e.message}`);
+        return null;
     }
 }
 
 /**
- * دالة فحص وتثبيت الجلسة باستخدام المتصفح الخفي (Puppeteer Stealth)
+ * فحص وتأكيد عنوان الـ IP الخارج من خلال بروكسي Oxylabs
  */
-async function runStealthBrowserPing() {
+async function checkEgressIp() {
+    const agent = getProxyAgent();
+    const axiosConfig = { timeout: 10000 };
+    if (agent) {
+        axiosConfig.httpsAgent = agent;
+        axiosConfig.httpAgent = agent;
+    }
+
+    try {
+        const res = await axios.get('http://ip-api.com/json/', axiosConfig);
+        if (res.data && res.data.status === 'success') {
+            sessionState.activeProxyIp = res.data.query;
+            sessionState.proxyLocation = `${res.data.country} (${res.data.countryCode}) - ${res.data.isp}`;
+            
+            if (agent) {
+                addLog('success', `🌐 الاتصال يمر عبر Oxylabs US Proxy! IP: ${res.data.query} [${res.data.country} - ${res.data.isp}]`);
+            } else {
+                addLog('info', `🌐 الاتصال مباشر بدون بروكسي: ${res.data.query}`);
+            }
+        }
+    } catch (e) {
+        console.error('Proxy IP check failed:', e.message);
+        addLog('error', `⚠️ تعذر التحقق من IP بروكسي Oxylabs: ${e.message}`);
+    }
+}
+
+/**
+ * دالة إرسال نبضة الجلسة وتأكيد حيوية الحساب عبر Oxylabs Proxy
+ */
+async function sendSessionPing() {
     sessionState.totalPings++;
     sessionState.lastChecked = new Date().toISOString();
 
@@ -85,195 +109,132 @@ async function runStealthBrowserPing() {
         return;
     }
 
-    addLog('ping', `🚀 تشغيل المتصفح الخفي بـ IP أمريكا لحقن السيشن وتجاوز الحماية...`);
+    await checkEgressIp();
 
-    let browser = null;
+    addLog('ping', `🚀 إرسال نبضة نشاط #${sessionState.totalPings} عبر Oxylabs US Proxy...`);
 
-    try {
-        if (!puppeteer) {
-            throw new Error('مكتبة Puppeteer غير مثبة، سيتم استخدام النمط الاحتياطي.');
-        }
+    const agent = getProxyAgent();
+    const requestHeaders = {
+        'User-Agent': 'TikTok 30.0.0 rv:300013 (iPhone; iOS 16.5; ar_SA) Cronet',
+        'Accept': 'application/json',
+        'Cookie': `sessionid=${cleanSession}; sessionid_ss=${cleanSession}; sid_tt=${cleanSession}; store-country-code=us;`
+    };
 
-        // تشغيل متصفح كرومايت الخفي
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-gpu',
-                '--lang=en-US,en'
-            ]
-        });
+    const mobileEndpoints = [
+        'https://api16-normal-c-useast1a.tiktokv.com/passport/web/account/info/?aid=1233',
+        'https://www.tiktok.com/passport/web/account/info/?aid=1459'
+    ];
 
-        const page = await browser.newPage();
+    let authenticated = false;
 
-        // ضبط أبعاد الشاشة وترويسة المتصفح البشري
-        await page.setViewport({ width: 1280, height: 800 });
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36');
-
-        // حقن كوكيز الجلسة ودولة المتجر الأمريكية داخل المتصفح
-        const cookiesToSet = [
-            { name: 'sessionid', value: cleanSession, domain: '.tiktok.com', path: '/' },
-            { name: 'sessionid_ss', value: cleanSession, domain: '.tiktok.com', path: '/' },
-            { name: 'sid_tt', value: cleanSession, domain: '.tiktok.com', path: '/' },
-            { name: 'store-country-code', value: 'us', domain: '.tiktok.com', path: '/' },
-            { name: 'store-country-code-src', value: 'uid', domain: '.tiktok.com', path: '/' }
-        ];
-
-        await page.setCookie(...cookiesToSet);
-
-        // فتح صفحة تيك توك للتحقق من الجلسة
-        addLog('info', '🌐 جاري فتح صفحة تيك توك الداخلية وتأكيد التوقيع الرقمي...');
-        await page.goto('https://www.tiktok.com/passport/web/account/info/?aid=1459', {
-            waitUntil: 'networkidle2',
-            timeout: 20000
-        });
-
-        // قراءة الاستجابة النصية من الصفحة
-        const pageContent = await page.evaluate(() => document.body.innerText);
-
-        let parsedData = null;
+    for (const endpoint of mobileEndpoints) {
         try {
-            parsedData = JSON.parse(pageContent);
-        } catch (err) {
-            // الاستجابة ليست JSON مباشر
-        }
-
-        if (parsedData && parsedData.data && (parsedData.data.user_id || parsedData.data.username)) {
-            const p = parsedData.data;
-
-            sessionState.status = 'LOGGED_IN';
-            sessionState.successfulPings++;
-            sessionState.errorMessage = null;
-
-            sessionState.account = {
-                userId: p.user_id || '---',
-                uniqueId: p.username || p.screen_name || '---',
-                nickname: p.screen_name || p.username || '---',
-                avatar: p.avatar_url || p.avatar_thumb?.url_list?.[0] || '',
-                region: (p.country_code || p.region || 'US').toUpperCase(),
-                language: (p.language || 'AR').toUpperCase(),
-                verified: Boolean(p.is_verified)
+            const config = {
+                headers: requestHeaders,
+                timeout: 12000
             };
 
-            addLog('success', `✅ تم نجاح الجلسة وتأكيد تسجيل الدخول عبر المتصفح الخفي للحساب: @${sessionState.account.uniqueId} (المنطقة: ${sessionState.account.region})`);
-        } else {
-            // محاولة ثانوية: فتح صفحة البروفايل الشخصية
-            addLog('info', '🔍 فحص الجلسة عبر الصفحة الشخصية للبروفايل...');
-            await page.goto('https://www.tiktok.com/@me', { waitUntil: 'networkidle2', timeout: 15000 });
+            if (agent) {
+                config.httpsAgent = agent;
+                config.httpAgent = agent;
+            }
 
-            const currentUrl = page.url();
+            const response = await axios.get(endpoint, config);
+            const resData = response.data;
 
-            if (!currentUrl.includes('/login') && !currentUrl.includes('/signup')) {
+            if (resData && resData.data && (resData.data.user_id || resData.data.username)) {
+                const p = resData.data;
+
                 sessionState.status = 'LOGGED_IN';
                 sessionState.successfulPings++;
                 sessionState.errorMessage = null;
 
-                addLog('success', `✅ الجلسة نشطة ومستقرة بـ IP أمريكا عبر المتصفح الخفي.`);
-            } else {
-                sessionState.status = 'REJECTED';
-                sessionState.failedPings++;
-                sessionState.errorMessage = 'السيشن ايدي منتهي الصلاحية أو تم إلغاؤه من تيك توك.';
-                addLog('error', `❌ تم رفض الجلسة (Login expired).`);
+                let createdDateStr = 'غير محدد';
+                if (p.create_time) {
+                    createdDateStr = new Date(p.create_time * 1000).toLocaleString('ar-SA');
+                }
+
+                sessionState.account = {
+                    userId: p.user_id || '---',
+                    uniqueId: p.username || p.screen_name || '---',
+                    nickname: p.screen_name || p.username || '---',
+                    avatar: p.avatar_url || p.avatar_thumb?.url_list?.[0] || '',
+                    email: p.email || 'غير معلن',
+                    mobile: p.mobile || 'غير معلن',
+                    createdAt: createdDateStr,
+                    region: (p.country_code || p.region || 'US').toUpperCase(),
+                    language: (p.language || 'AR').toUpperCase(),
+                    verified: Boolean(p.is_verified)
+                };
+
+                addLog('success', `✅ تم تأكيد نشاط الجلسة للحساب: @${sessionState.account.uniqueId} | المنطقة: ${sessionState.account.region}`);
+                authenticated = true;
+                break;
             }
-        }
-
-    } catch (error) {
-        console.warn('Stealth browser error, running HTTP fallback:', error.message);
-        addLog('info', `⚠️ تحويل للنمط المباشر: ${error.message}`);
-        await runHttpFallbackPing(cleanSession);
-    } finally {
-        if (browser) {
-            await browser.close().catch(() => {});
+        } catch (e) {
+            console.log(`Endpoint attempt error (${endpoint}):`, e.message);
         }
     }
-}
 
-/**
- * نمط احتياطي باستخدام طلبات HTTP المحاكاة
- */
-async function runHttpFallbackPing(cleanSession) {
-    try {
-        const response = await axios.get('https://api16-normal-c-useast1a.tiktokv.com/passport/web/account/info/?aid=1233', {
-            headers: {
-                'User-Agent': 'TikTok 30.0.0 rv:300013 (iPhone; iOS 16.5; ar_SA) Cronet',
-                'Accept': 'application/json',
-                'Cookie': `sessionid=${cleanSession}; sessionid_ss=${cleanSession}; sid_tt=${cleanSession}; store-country-code=us;`
-            },
-            timeout: 10000
-        });
-
-        if (response.data && response.data.data && response.data.data.user_id) {
-            const p = response.data.data;
-            sessionState.status = 'LOGGED_IN';
-            sessionState.successfulPings++;
-            sessionState.account = {
-                userId: p.user_id,
-                uniqueId: p.username || '---',
-                nickname: p.screen_name || '---',
-                avatar: p.avatar_url || '',
-                region: (p.country_code || 'US').toUpperCase(),
-                language: 'AR',
-                verified: Boolean(p.is_verified)
-            };
-            addLog('success', `✅ نجحت الجلسة عبر النمط الاحتياطي للحساب: @${p.username}`);
-        } else {
-            sessionState.status = 'REJECTED';
-            sessionState.failedPings++;
-            sessionState.errorMessage = 'السيشن منتهي الصلاحية. يرجى تجديده من المتصفح.';
-            addLog('error', `❌ تم رفض الجلسة (Login Expired).`);
-        }
-    } catch (err) {
-        sessionState.status = 'ERROR';
+    if (!authenticated) {
+        sessionState.status = 'REJECTED';
         sessionState.failedPings++;
-        sessionState.errorMessage = `خطأ شبكة: ${err.message}`;
-        addLog('error', `⚠️ خطأ في الاتصال: ${err.message}`);
+        sessionState.errorMessage = 'السيشن ايدي غير صالح أو انتهت صلاحيته.';
+        addLog('error', `❌ تم رفض الجلسة (Login expired). جدد الـ sessionid من المتصفح.`);
     }
 }
 
-fetchServerIpInfo();
-setTimeout(runStealthBrowserPing, 2000);
+// التشغيل التلقائي عند إقلاع السيرفر
+checkEgressIp();
+setTimeout(sendSessionPing, 2500);
 
-// تكرار النبضات المتواصلة كل 25 إلى 40 ثانية
+// تكرار النبضات المتواصلة كل 20 إلى 35 ثانية
 function scheduleLoop() {
-    const delay = Math.floor(Math.random() * (40000 - 25000 + 1)) + 25000;
+    const delay = Math.floor(Math.random() * (35000 - 20000 + 1)) + 20000;
     setTimeout(() => {
-        runStealthBrowserPing().finally(scheduleLoop);
+        sendSessionPing().finally(scheduleLoop);
     }, delay);
 }
 scheduleLoop();
 
-// --- مسارات الـ API ---
+// --- مسارات الـ API للواجهة ---
 
 app.get('/api/session-status', (req, res) => {
     res.json({
         success: true,
         sessionIdMasked: CURRENT_SESSION_ID ? `${CURRENT_SESSION_ID.substring(0, 8)}...${CURRENT_SESSION_ID.slice(-4)}` : 'غير محدد',
+        proxyUrlMasked: CURRENT_PROXY_URL ? CURRENT_PROXY_URL.replace(/:([^:@]+)@/, ':****@') : 'بدون بروكسي',
         sessionState,
         activityLogs
     });
 });
 
 app.post('/api/trigger-ping', async (req, res) => {
-    await runStealthBrowserPing();
+    await sendSessionPing();
     res.json({ success: true, sessionState, activityLogs });
 });
 
 app.post('/api/update-session', async (req, res) => {
     const { newSessionId } = req.body;
     if (!newSessionId || !newSessionId.trim()) {
-        return res.status(400).json({ success: false, message: 'يرجى تقديم Session ID جديد.' });
+        return res.status(400).json({ success: false, message: 'يرجى تقديم Session ID.' });
     }
 
     CURRENT_SESSION_ID = newSessionId.trim();
-    addLog('info', '🔄 تم تحديث الـ Session ID واختباره بالمتصفح الخفي.');
-    await runStealthBrowserPing();
+    addLog('info', '🔄 تم تحديث الـ Session ID واختباره عبر بروكسي Oxylabs.');
+    await sendSessionPing();
 
     res.json({ success: true, message: 'تم التحديث بنجاح.', sessionState });
+});
+
+app.post('/api/update-proxy', async (req, res) => {
+    const { proxyUrl } = req.body;
+    CURRENT_PROXY_URL = proxyUrl ? proxyUrl.trim() : OXYLABS_PROXY_URL;
+
+    addLog('info', '🔌 تم تحديث رابط البروكسي وإعادة اختباره.');
+    await sendSessionPing();
+
+    res.json({ success: true, message: 'تم تحديث إعدادات البروكسي.', sessionState });
 });
 
 app.get('/', (req, res) => {
@@ -281,6 +242,6 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`TikTok Stealth Session Keeper Running on Port ${PORT}`);
+    console.log(`TikTok Oxylabs Keeper Server Active on Port ${PORT}`);
 });
 
