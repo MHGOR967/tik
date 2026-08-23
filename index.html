@@ -23,21 +23,21 @@
         <div class="flex flex-col md:flex-row justify-between items-center bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-lg gap-4">
             <div class="flex items-center space-x-3 space-x-reverse">
                 <div class="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-2xl">
-                    <i class="fa-solid fa-earth-americas"></i>
+                    <i class="fa-solid fa-user-ninja"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-black text-slate-100">تثبيت جلسة تيك توك 🇺🇸</h1>
-                    <p class="text-xs text-slate-400 font-medium">محرك Mobile API (يعمل بـ Session ID فقط)</p>
+                    <h1 class="text-xl font-black text-slate-100">مراقب الجلسة بـ Stealth Browser 🇺🇸</h1>
+                    <p class="text-xs text-slate-400 font-medium">محرك المتصفح الخفي لتجاوز حظر SecGuard</p>
                 </div>
             </div>
 
             <div id="statusBadge" class="inline-flex items-center space-x-2 space-x-reverse px-4 py-2 rounded-2xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">
                 <span class="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse"></span>
-                <span>جاري التحقق...</span>
+                <span>جاري التشغيل...</span>
             </div>
         </div>
 
-        <!-- Server IP Grid -->
+        <!-- Server IP Bar -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div>
                 <span class="text-slate-500 block mb-1">IP السيرفر الأمريكي</span>
@@ -48,8 +48,8 @@
                 <span id="srvCountry" class="font-bold text-slate-200">---</span>
             </div>
             <div>
-                <span class="text-slate-500 block mb-1">المدينة والشبكة</span>
-                <span id="srvCity" class="font-bold text-slate-200">---</span>
+                <span class="text-slate-500 block mb-1">نمط المحرك</span>
+                <span class="font-bold text-blue-400">Puppeteer Stealth</span>
             </div>
             <div>
                 <span class="text-slate-500 block mb-1">إجمالي النبضات</span>
@@ -60,22 +60,23 @@
         <!-- Profile Card -->
         <div id="accountCard" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-md">
             <h2 class="text-xs font-extrabold text-slate-400 tracking-wider uppercase mb-4 border-b border-slate-800 pb-3 flex justify-between items-center">
-                <span>بيانات الحساب المسجلة</span>
+                <span>بيانات الحساب النشط</span>
                 <span id="maskedSession" class="mono text-[10px] text-slate-500 font-normal">Session: ---</span>
             </h2>
 
             <div id="accountLoading" class="py-6 text-center text-slate-500 text-xs font-medium">
                 <i class="fa-solid fa-spinner animate-spin text-lg mb-2 block text-blue-500"></i>
-                جاري الاتصال بـ Mobile API وفحص الـ Session ID...
+                جاري تشغيل المتصفح الخفي وحقن الجلسة...
             </div>
 
             <!-- Error Banner -->
             <div id="accountError" class="hidden bg-rose-950/40 border border-rose-800/80 text-rose-300 p-4 rounded-2xl text-xs space-y-1">
                 <div class="flex items-center space-x-2 space-x-reverse text-rose-400 font-extrabold">
                     <i class="fa-solid fa-circle-xmark text-base"></i>
-                    <span>تم رفض الـ Session ID</span>
+                    <span>تم رفض الـ Session ID من تيك توك</span>
                 </div>
                 <p id="errorReasonText" class="text-slate-300 font-normal mt-1 dir-auto">---</p>
+                <p class="text-[11px] text-slate-400 mt-2">💡 إذا ظهرت هذه الرسالة، فهذا يعني أن الجلسة قُطعت بالفعل من هاتفك بسبب تسجيل الخروج أو تغيير كلمة المرور. سجل دخول جديد من المتصفح وانسخ `sessionid` الجديد.</p>
             </div>
 
             <!-- Profile Details -->
@@ -105,19 +106,8 @@
                         <span class="font-bold text-emerald-400">🇺🇸 US (أمريكا)</span>
                     </div>
                     <div class="bg-slate-950 border border-slate-800/80 p-3 rounded-2xl">
-                        <span class="text-slate-500 text-[10px] block uppercase font-bold">CREATED AT</span>
-                        <span id="accCreatedAt" class="font-bold text-slate-200">---</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div class="bg-slate-950 border border-slate-800/80 p-3 rounded-2xl flex justify-between items-center">
-                        <span class="text-slate-500 text-[10px] font-bold uppercase">EMAIL</span>
-                        <span id="accEmail" class="mono font-bold text-blue-400">---</span>
-                    </div>
-                    <div class="bg-slate-950 border border-slate-800/80 p-3 rounded-2xl flex justify-between items-center">
-                        <span class="text-slate-500 text-[10px] font-bold uppercase">PHONE</span>
-                        <span id="accPhone" class="mono font-bold text-blue-400">---</span>
+                        <span class="text-slate-500 text-[10px] block uppercase font-bold">LANGUAGE</span>
+                        <span id="accLang" class="font-bold text-slate-200 uppercase">---</span>
                     </div>
                 </div>
             </div>
@@ -126,10 +116,10 @@
         <!-- Session Input Form -->
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                <span class="text-xs font-bold text-slate-200">إدخال Session ID فقط</span>
+                <span class="text-xs font-bold text-slate-200">تحديث Session ID الجلسة</span>
                 <button onclick="triggerManualPing()" id="pingBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 transition text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 space-x-reverse">
                     <i id="pingIcon" class="fa-solid fa-paper-plane"></i>
-                    <span>إرسال نبضة فورية</span>
+                    <span>تشغيل النبضة بالمتصفح الخفي</span>
                 </button>
             </div>
 
@@ -139,7 +129,7 @@
                     <input type="text" id="sessionIdInput" required placeholder="مثال: 78534469621c1064eae0e17393022dee" 
                            class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 mono outline-none focus:border-blue-500">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition">
-                        حفظ وفحص الجلسة
+                        حفظ واختبار بالمتصفح
                     </button>
                 </div>
             </form>
@@ -161,7 +151,7 @@
 
     <!-- Footer -->
     <footer class="text-center text-xs text-slate-600 mt-8">
-        TikTok USA Mobile Session Keeper &copy; 2026
+        TikTok USA Stealth Session Keeper &copy; 2026
     </footer>
 
     <!-- Script -->
@@ -178,7 +168,6 @@
                     if (state.serverIpInfo) {
                         document.getElementById('srvIp').innerText = state.serverIpInfo.ip;
                         document.getElementById('srvCountry').innerText = `${state.serverIpInfo.country} (${state.serverIpInfo.countryCode})`;
-                        document.getElementById('srvCity').innerText = `${state.serverIpInfo.city} - ${state.serverIpInfo.isp}`;
                     }
                     document.getElementById('srvPings').innerText = state.totalPings;
                     document.getElementById('maskedSession').innerText = `Session: ${data.sessionIdMasked}`;
@@ -192,7 +181,7 @@
                         badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span>الجلسة مرفوضة / غير صالحة ❌</span>';
                     } else {
                         badge.className = 'inline-flex items-center space-x-2 space-x-reverse px-4 py-2 rounded-2xl text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-800';
-                        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span><span>جاري الفحص...</span>';
+                        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span><span>جاري تشغيل المتصفح...</span>';
                     }
 
                     const loading = document.getElementById('accountLoading');
@@ -210,9 +199,7 @@
                         document.getElementById('accAvatar').src = acc.avatar;
                         document.getElementById('accId').innerText = acc.userId;
                         document.getElementById('accReg').innerText = acc.region;
-                        document.getElementById('accCreatedAt').innerText = acc.createdAt || 'غير معلن';
-                        document.getElementById('accEmail').innerText = acc.email || 'غير معلن';
-                        document.getElementById('accPhone').innerText = acc.mobile || 'غير معلن';
+                        document.getElementById('accLang').innerText = acc.language;
 
                         if (acc.verified) document.getElementById('accVerified').classList.remove('hidden');
 
@@ -273,7 +260,7 @@
             }
         }
 
-        setInterval(fetchStatus, 4000);
+        setInterval(fetchStatus, 4500);
         window.addEventListener('DOMContentLoaded', fetchStatus);
     </script>
 </body>
