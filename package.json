@@ -1,7 +1,7 @@
 {
-  "name": "tiktok-usa-session-keeper",
+  "name": "tiktok-usa-manual-cookie-keeper",
   "version": "1.0.0",
-  "description": "TikTok USA Active Session Keeper & Profile Inspector",
+  "description": "TikTok USA Manual Field Entry Engine & Session Keeper",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
