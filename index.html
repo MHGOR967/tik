@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مراقب وتثبيت جلسة تيك توك أمريكا 🇺🇸</title>
+    <title>تثبيت ومراقب جلسة تيك توك أمريكا 🇺🇸</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
@@ -22,36 +21,35 @@
 
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-center bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-lg gap-4">
-            <div class="flex items-center space-x-3 space-x-reverse text-center md:text-right">
+            <div class="flex items-center space-x-3 space-x-reverse">
                 <div class="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-2xl">
                     <i class="fa-solid fa-earth-americas"></i>
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-slate-100">تثبيت جلسة تيك توك 🇺🇸</h1>
-                    <p class="text-xs text-slate-400 font-medium">محاكي نشاط السيرفر بـ IP أمريكا لحفظ دولة الجلسة</p>
+                    <p class="text-xs text-slate-400 font-medium">نموذج الإدخال اليدوي لقيم الكوكيز</p>
                 </div>
             </div>
 
-            <!-- Status Indicator -->
             <div id="statusBadge" class="inline-flex items-center space-x-2 space-x-reverse px-4 py-2 rounded-2xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">
                 <span class="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse"></span>
                 <span>جاري التحقق...</span>
             </div>
         </div>
 
-        <!-- USA Server IP Details -->
-        <div class="bg-gradient-to-br from-slate-900 to-slate-900/80 border border-slate-800 rounded-3xl p-5 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+        <!-- Server Info Bar -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 shadow-sm grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div>
-                <span class="text-slate-500 block mb-1">عنوان IP السيرفر</span>
+                <span class="text-slate-500 block mb-1">IP السيرفر الأمريكي</span>
                 <span id="srvIp" class="mono font-bold text-blue-400 text-sm">---</span>
             </div>
             <div>
-                <span class="text-slate-500 block mb-1">دولة السيرفر</span>
+                <span class="text-slate-500 block mb-1">الدولة</span>
                 <span id="srvCountry" class="font-bold text-slate-200">---</span>
             </div>
             <div>
-                <span class="text-slate-500 block mb-1">المدينة والمنطقة</span>
-                <span id="srvCity" class="font-bold text-slate-200">---</span>
+                <span class="text-slate-500 block mb-1">الكوكيز المدخلة</span>
+                <span id="cookieCount" class="mono font-bold text-blue-400 text-sm">0</span>
             </div>
             <div>
                 <span class="text-slate-500 block mb-1">إجمالي النبضات</span>
@@ -62,25 +60,26 @@
         <!-- Account Profile Card -->
         <div id="accountCard" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-md">
             <h2 class="text-xs font-extrabold text-slate-400 tracking-wider uppercase mb-4 border-b border-slate-800 pb-3 flex justify-between items-center">
-                <span>بيانات الحساب المرتبط للجلسة</span>
-                <span id="maskedCookie" class="mono text-[10px] text-slate-500 font-normal">Cookie: ---</span>
+                <span>بيانات حساب الجلسة المسجلة</span>
+                <span id="lastPingTime" class="mono text-[10px] text-slate-500 font-normal">---</span>
             </h2>
 
             <div id="accountLoading" class="py-6 text-center text-slate-500 text-xs font-medium">
                 <i class="fa-solid fa-spinner animate-spin text-lg mb-2 block text-blue-500"></i>
-                جاري الاتصال وتأكيد تسجيل الدخول من أمريكا...
+                جاري إرسال النبضة وفحص الجلسة...
             </div>
 
             <!-- Error Banner -->
-            <div id="accountError" class="hidden bg-rose-950/40 border border-rose-800/80 text-rose-300 p-4 rounded-2xl text-xs font-bold space-y-1">
+            <div id="accountError" class="hidden bg-rose-950/40 border border-rose-800/80 text-rose-300 p-4 rounded-2xl text-xs space-y-2">
                 <div class="flex items-center space-x-2 space-x-reverse text-rose-400 font-extrabold">
                     <i class="fa-solid fa-circle-xmark text-base"></i>
-                    <span>تم رفض الجلسة من تيك توك</span>
+                    <span>تم رفض الجلسة من تيك توك (Login Expired)</span>
                 </div>
-                <p id="errorReasonText" class="text-slate-300 font-normal mt-1 dir-auto">---</p>
+                <p id="errorReasonText" class="text-slate-300 font-normal dir-auto">---</p>
+                <p class="text-[11px] text-slate-400 mt-1">💡 نصيحة: انسخ قيمة <strong>ttwid</strong> و <strong>sid_tt</strong> و <strong>uid_tt</strong> من تطبيق Cookie EditorNext وضعها في الخانات بالأسفل.</p>
             </div>
 
-            <!-- Profile Info Content -->
+            <!-- Profile Details -->
             <div id="accountDetails" class="hidden space-y-5">
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <img id="accAvatar" src="" class="w-16 h-16 rounded-full object-cover border-2 border-blue-500 p-0.5 shadow-md">
@@ -112,7 +111,6 @@
                     </div>
                 </div>
 
-                <!-- Stats Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                     <div class="bg-blue-950/40 border border-blue-800/40 p-3 rounded-2xl">
                         <span class="text-[10px] font-bold text-blue-400 uppercase">FOLLOWERS</span>
@@ -134,33 +132,80 @@
             </div>
         </div>
 
-        <!-- Controls & Session Update -->
+        <!-- Manual Cookie Input Form -->
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <span class="text-xs font-bold text-slate-300">التحكم اليدوي بالجلسة</span>
-                <button onclick="triggerManualPing()" id="pingBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 active:scale-95 transition text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 space-x-reverse shadow-lg shadow-blue-600/20">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <span class="text-xs font-bold text-slate-200">إدخال قيم الكوكيز يدويـاً (Manual Cookie Form)</span>
+                <button onclick="triggerManualPing()" id="pingBtn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 transition text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 space-x-reverse">
                     <i id="pingIcon" class="fa-solid fa-paper-plane"></i>
-                    <span>إرسال نبضة فورية الآن</span>
+                    <span>اختبار الجلسة الآن</span>
                 </button>
             </div>
 
-            <!-- Update Session ID Form -->
-            <form onsubmit="updateSessionId(event)" class="space-y-2">
-                <label class="text-xs font-bold text-slate-400 block">تحديث Session ID الكوكي (إن انتهت الصلاحية):</label>
-                <div class="flex space-x-2 space-x-reverse">
-                    <input type="text" id="newSessionInput" required placeholder="الصق قيمة sessionid الجديدة هنا..." 
-                           class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-200 mono outline-none focus:border-blue-500">
-                    <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2.5 rounded-xl text-xs transition">
-                        حفظ وتطبيق
-                    </button>
+            <form onsubmit="saveManualCookies(event)" class="space-y-4">
+                <!-- Main Required Cookies -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <label class="text-slate-400 font-bold block mb-1">sessionid <span class="text-rose-500">*</span></label>
+                        <input type="text" id="inp_sessionid" required placeholder="78534469621c..." 
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 mono outline-none focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-bold block mb-1">ttwid</label>
+                        <input type="text" id="inp_ttwid" placeholder="1%7CrwvFfQ..." 
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 mono outline-none focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-bold block mb-1">uid_tt</label>
+                        <input type="text" id="inp_uid_tt" placeholder="fbd7901c0a0c..." 
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 mono outline-none focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-bold block mb-1">sid_tt</label>
+                        <input type="text" id="inp_sid_tt" placeholder="78534469621c..." 
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 mono outline-none focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-bold block mb-1">msToken</label>
+                        <input type="text" id="inp_msToken" placeholder="eJGPfMwqx..." 
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 mono outline-none focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="text-slate-400 font-bold block mb-1">odin_tt</label>
+                        <input type="text" id="inp_odin_tt" placeholder="80d76006f54..." 
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 mono outline-none focus:border-blue-500">
+                    </div>
                 </div>
+
+                <!-- Custom Dynamic Rows -->
+                <div class="border-t border-slate-800 pt-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-slate-400">إضافة كوكيز فرعية إضافية (اختياري):</span>
+                        <button type="button" onclick="addCustomRow()" class="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center space-x-1 space-x-reverse">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>إضافة كوكي جديد</span>
+                        </button>
+                    </div>
+
+                    <div id="customRowsContainer" class="space-y-2"></div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-2xl text-xs transition flex items-center justify-center space-x-2 space-x-reverse shadow-lg shadow-blue-600/20">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>حفظ جميع الكوكيز واختبار الجلسة</span>
+                </button>
             </form>
         </div>
 
-        <!-- Activity Console Logs -->
+        <!-- Logs Console -->
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5">
             <h3 class="text-xs font-extrabold text-slate-400 tracking-wider uppercase mb-3 flex justify-between items-center">
-                <span>سجل النبضات والعمليات المباشرة</span>
+                <span>سجل النبضات المباشرة</span>
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             </h3>
 
@@ -173,11 +218,33 @@
 
     <!-- Footer -->
     <footer class="text-center text-xs text-slate-600 mt-8">
-        TikTok USA Session Keeper & Inspector System &copy; 2026
+        TikTok USA Manual Cookie Engine &copy; 2026
     </footer>
 
     <!-- Script -->
     <script>
+        function addCustomRow(key = '', value = '') {
+            const container = document.getElementById('customRowsContainer');
+            const rowId = 'row_' + Date.now() + Math.random().toString(36).substr(2, 4);
+
+            const row = document.createElement('div');
+            row.id = rowId;
+            row.className = 'flex items-center space-x-2 space-x-reverse';
+            row.innerHTML = `
+                <input type="text" placeholder="اسم الكوكي (مثال: cmpl_token)" value="${key}" class="custom-key w-1/3 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 mono outline-none focus:border-blue-500">
+                <input type="text" placeholder="قيمة الكوكي..." value="${value}" class="custom-val flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 mono outline-none focus:border-blue-500">
+                <button type="button" onclick="removeRow('${rowId}')" class="text-rose-500 hover:text-rose-400 p-2 text-xs">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeRow(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
         async function fetchStatus() {
             try {
                 const res = await fetch('/api/session-status');
@@ -185,31 +252,39 @@
 
                 if (data.success) {
                     const state = data.sessionState;
+                    const cookies = data.cookies || {};
                     const logs = data.activityLogs || [];
 
-                    // 1. تحديث خادم IP
                     if (state.serverIpInfo) {
                         document.getElementById('srvIp').innerText = state.serverIpInfo.ip;
                         document.getElementById('srvCountry').innerText = `${state.serverIpInfo.country} (${state.serverIpInfo.countryCode})`;
-                        document.getElementById('srvCity').innerText = `${state.serverIpInfo.city} - ${state.serverIpInfo.isp}`;
                     }
                     document.getElementById('srvPings').innerText = state.totalPings;
-                    document.getElementById('maskedCookie').innerText = `Cookie: ${data.sessionIdMasked}`;
+                    document.getElementById('cookieCount').innerText = data.cookieCount || 0;
+                    document.getElementById('lastPingTime').innerText = state.lastChecked ? new Date(state.lastChecked).toLocaleTimeString('ar-SA') : '---';
 
-                    // 2. تحديث شارة الحالة
+                    // تعبئة الحقول إذا كانت فارغة أول مرة
+                    if (cookies.sessionid && !document.getElementById('inp_sessionid').value) {
+                        document.getElementById('inp_sessionid').value = cookies.sessionid || '';
+                        document.getElementById('inp_ttwid').value = cookies.ttwid || '';
+                        document.getElementById('inp_uid_tt').value = cookies.uid_tt || '';
+                        document.getElementById('inp_sid_tt').value = cookies.sid_tt || '';
+                        document.getElementById('inp_msToken').value = cookies.msToken || '';
+                        document.getElementById('inp_odin_tt').value = cookies.odin_tt || '';
+                    }
+
                     const badge = document.getElementById('statusBadge');
                     if (state.status === 'LOGGED_IN') {
                         badge.className = 'inline-flex items-center space-x-2 space-x-reverse px-4 py-2 rounded-2xl text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800';
-                        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span><span>نشط ومسجل الدخول 🇺🇸</span>';
+                        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span><span>الجلسة نشطة ومسجلة 🇺🇸</span>';
                     } else if (state.status === 'REJECTED') {
                         badge.className = 'inline-flex items-center space-x-2 space-x-reverse px-4 py-2 rounded-2xl text-xs font-bold bg-rose-950/80 text-rose-300 border border-rose-800';
                         badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span>الجلسة مرفوضة / غير صالحة ❌</span>';
                     } else {
                         badge.className = 'inline-flex items-center space-x-2 space-x-reverse px-4 py-2 rounded-2xl text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-800';
-                        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span><span>جاري جلب النبضة...</span>';
+                        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span><span>جاري الفحص...</span>';
                     }
 
-                    // 3. عرض بيانات الحساب أو الخطأ
                     const loading = document.getElementById('accountLoading');
                     const errBox = document.getElementById('accountError');
                     const details = document.getElementById('accountDetails');
@@ -237,11 +312,10 @@
                         details.classList.remove('hidden');
                     } else if (state.status === 'REJECTED' || state.status === 'ERROR') {
                         details.classList.add('hidden');
-                        document.getElementById('errorReasonText').innerText = state.errorMessage || 'سبب غير معروف.';
+                        document.getElementById('errorReasonText').innerText = state.errorMessage || 'تعذر تأكيد الجلسة.';
                         errBox.classList.remove('hidden');
                     }
 
-                    // 4. تحديث سجلات الكونسول
                     const consoleEl = document.getElementById('logsConsole');
                     if (logs.length > 0) {
                         consoleEl.innerHTML = logs.map(l => {
@@ -254,7 +328,7 @@
                     }
                 }
             } catch (e) {
-                console.error('Status fetch failed:', e);
+                console.error('Fetch status failed:', e);
             }
         }
 
@@ -269,30 +343,47 @@
             }
         }
 
-        async function updateSessionId(e) {
+        async function saveManualCookies(e) {
             e.preventDefault();
-            const val = document.getElementById('newSessionInput').value.trim();
-            if (!val) return;
+
+            const fields = {
+                sessionid: document.getElementById('inp_sessionid').value.trim(),
+                ttwid: document.getElementById('inp_ttwid').value.trim(),
+                uid_tt: document.getElementById('inp_uid_tt').value.trim(),
+                sid_tt: document.getElementById('inp_sid_tt').value.trim(),
+                msToken: document.getElementById('inp_msToken').value.trim(),
+                odin_tt: document.getElementById('inp_odin_tt').value.trim()
+            };
+
+            const customPairs = [];
+            const keyInputs = document.querySelectorAll('.custom-key');
+            const valInputs = document.querySelectorAll('.custom-val');
+
+            keyInputs.forEach((kInp, i) => {
+                const k = kInp.value.trim();
+                const v = valInputs[i] ? valInputs[i].value.trim() : '';
+                if (k && v) {
+                    customPairs.push({ key: k, value: v });
+                }
+            });
 
             try {
-                const res = await fetch('/api/update-session', {
+                const res = await fetch('/api/update-manual-cookies', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ newSessionId: val })
+                    body: JSON.stringify({ fields, customPairs })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('newSessionInput').value = '';
                     await fetchStatus();
                 } else {
                     alert(data.message);
                 }
             } catch (e) {
-                alert('تعذر تحديث الـ Session ID.');
+                alert('حدث خطأ أثناء حفظ الكوكيز.');
             }
         }
 
-        // تحديث حالة النظام كل 4 ثوانٍ
         setInterval(fetchStatus, 4000);
         window.addEventListener('DOMContentLoaded', fetchStatus);
     </script>
